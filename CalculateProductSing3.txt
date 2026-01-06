@@ -1,0 +1,655 @@
+//Calculating overorders and p-overorders///////////////////////////////////////////////////////////
+
+function MatrixOfSubOrder(Rr,Oo)
+// RngFunOrd, RngFunOrd -> Matrix[A]
+// Gives matrix of basis of Rr related to basis of Oo
+    MatEntries:=[BaseRing(Rr)|];
+    rank := #Basis(Rr);
+    for element in Basis(Rr) do
+        elementInOo:=Eltseq(Oo!element);
+        for i in [1..rank] do
+            Append(~MatEntries,elementInOo[i]);
+        end for;
+    end for;
+    return Matrix(BaseRing(Rr),rank,rank,MatEntries);
+end function;
+
+function InvariantFactors(Rr,Oo)
+//RngFunOrd, RngFunOrd -> [A]
+//Gives the invariant factors of Oo/Rr
+    M:=MatrixOfSubOrder(Rr,Oo);
+    OverOrdList:=[**];
+    N,D,C:= SmithForm(M);  
+    //N has invariant factors of M on its diagonal, which are the invariant factors of Oo/Rr. 
+    // Make a list of the invariant factors
+    invfactors:=[BaseRing(Rr)|];
+    for i in [1..#Basis(Rr)] do
+        Append(~invfactors,N[i,i]);
+    end for;
+    return invfactors;
+end function;
+
+function ListOfDivisors(f)
+// UPolElm -> [UPolElm] 
+// Gives the list of divisors of f
+    factortuples:=Factorization(f);
+    A := Parent(f);
+    divlist:=[A|1];
+    for factortup in factortuples do
+        factor:=factortup[1];
+        power:=factortup[2];
+        newdivlist:=[A|];
+        for element in divlist do
+            for j in [0..power] do
+                Append(~newdivlist,element*(factor^j));
+            end for;
+        end for;
+        divlist:=newdivlist;
+    end for;
+    return divlist;
+end function;
+
+function OrdersInBetween(Rr,Oo)
+//RngFunOrd, RngFunOrd -> [RngFunOrd]
+//Calculates all orders in between Rr and Oo. (We have Rr \subset Oo.)
+	A:=BaseRing(Rr);
+        M:=MatrixOfSubOrder(Rr,Oo);
+        rank := #Basis(Rr);
+        OverOrdList:=[**];
+        N,D,C:= SmithForm(M);  
+	//N has invariant factors of M on its diagonal, which are the invariant factors of Oo/Rr. 
+
+	// Make a list of the invariant factors
+        factors:=[**];
+        for i in [1..rank] do
+            Append(~factors,N[i,i]);
+        end for;
+        
+	//Make a list of all posibilities [r_1,\ldots,r_k] such that r_i divides factors[i] 
+        DiagonalsList:=[*[A|]*];
+        for j in [1..rank] do
+            c:=factors[j];
+            Newdiaglist:=[**];
+            for divisor in ListOfDivisors(c) do
+                for diag in DiagonalsList do
+                    newrep:=Append(diag,divisor);
+                    Append(~Newdiaglist,newrep);
+                end for;
+            end for;
+            DiagonalsList:=Newdiaglist;
+        end for;
+        
+        for diag in DiagonalsList do
+            MatList:=[* [**] *];  			//List of matrices in form list of rows
+            for i in [1..rank] do
+                newMatList:=[**];
+                init:=[A|];
+                for j in [1..(i-1)] do
+                    Append(~init,Zero(A));
+                end for;
+                dd:=diag[i];
+                Append(~init,dd);
+                if dd eq factors[i] then
+                    for j in [i+1 .. rank] do
+                        Append(~init,Zero(A));		//init = [0,0,...,factors[i],0,...0]
+                    end for;
+                    for k in [1..#MatList] do		//For every matrix set row i to init 
+                        Append(~MatList[k], init);	//(by appending it to the list of rows)
+                    end for; 
+                else
+		    //Make list of elements of the form [0,0,...,diag[i],a_{i+1},\ldots,a_r] 
+		    //where a_j is in the set of lifts of A/(diag[j]). 
+                    RowBuilds:=[*init*];
+                    for j in [i+1 .. rank] do
+                        quot,gg:=quo<A|diag[j]>;	//Form A/(diag[j]) and the projection map
+                        newRowBuilds:=[**];
+                        for element in quot do
+                            for row in RowBuilds do
+                                Append(~newRowBuilds, Append(row,element@@gg));
+                            end for;
+                        end for;
+                        RowBuilds:=newRowBuilds;
+                    end for;
+		    // Append all possible new rows i to all partly created matrices
+                    for k in [1..#MatList] do
+                        for row in RowBuilds do
+                            Append(~newMatList, Append(MatList[k],row));
+                        end for;
+                    end for;
+                    MatList:=newMatList;
+                end if;
+            end for;
+            
+            for mat in MatList do
+                BasisSeq:=[Oo|];
+                for row in mat do
+                    Append(~BasisSeq,Oo!row);
+                end for;
+                thisIdeal:=ideal<Rr|BasisSeq>;
+                if (thisIdeal*thisIdeal eq thisIdeal) and ((1*Rr meet thisIdeal) eq 1*Rr) then
+                    add:= true;
+                    for ord in OverOrdList do
+                        if ord eq thisIdeal then
+                            add:=false;
+                        end if;
+                    end for;
+                    if add then
+                        Append(~OverOrdList,thisIdeal);
+                    end if;
+                end if;
+            end for;
+
+        end for;
+
+        OverOrdListAsOrders:=[**];
+        for ord in OverOrdList do
+            Append(~OverOrdListAsOrders,Order(Rr,Basis(ord)));
+        end for;
+
+        return OverOrdListAsOrders;
+end function;
+
+
+function pOverorders(R,p)
+// RngUPol, RngFunOrd,RingUPolElm -> [RngFunOrd]
+// For an A-order R we calculate the p-overorders over R 
+    //Create the maximal p-overorder Op
+    Op := pMaximalOrder(R,p);
+    //The orders between R and Op are exactly the p-overorders, so we calculate them with the same 
+    //program as before, except O is changed to Op.
+    return OrdersInBetween(R,Op); 
+end function;
+
+
+
+//Calculating W_S(R)////////////////////////////////////////////////////////////////////////////////////////
+
+
+    //return the trace dual ideal of an ideal I
+    function TraceDualIdeal(I)
+        Oo:=Order(I);
+        A := BaseRing(Oo);
+	F := FieldOfFractions(A); 
+        Bas:=Basis(I);
+        //n:=rank;
+	n := #Basis(Oo); 
+        M:=MatrixRing(F, n)![Trace(Bas[i]*Bas[j]): i, j in [1..n] ];
+        MM:=M^-1;
+        dualidealgens:=[&+[ (MM[i,j]*Bas[j]): j in [1..n]] : i in [1..n]] ;
+        return ideal<Oo|dualidealgens>;
+    end function;
+
+    //ideal quotient using trace dual ideal
+    function IdQuo(I,J)
+        return(TraceDualIdeal(TraceDualIdeal(I)*J));
+    end function;
+
+    //Return true if two ideals are weakly equivalent in R, false otherwise.
+    function WeaklyEquivalent(I,J)
+        if 1 in (IdQuo(I,J)*IdQuo(J,I)) then
+            return true;
+        else
+            return false;
+        end if;
+    end function;
+
+    //Return all ideals between Oo and ff
+    function OverIdeals(Oo,ff)
+        O0:=Order(ff);
+	A:= BaseRing(O0); 
+	rank := #Basis(O0); 
+        MatEntries:=[A|];
+        for element in Basis(ff) do
+            elementInOo:=Eltseq(Oo!element);
+            for i in [1..rank] do
+                Append(~MatEntries,elementInOo[i]);
+            end for;
+        end for;
+        M:= Matrix(A,rank,rank,MatEntries);
+
+        OverIdList:=[**];
+        N,D,C:= SmithForm(M);
+        newbasisastuples:=Rows(C);
+        newbasis:=[Oo|];
+        for row in newbasisastuples do
+            newbasiselt:=Zero(Oo);
+            for i in [1..rank] do
+                newbasiselt:=newbasiselt+row[i]*Basis(Oo)[i];
+            end for;
+            Append(~newbasis,newbasiselt);
+        end for;
+
+        factors:=[**];
+        for i in [1..rank] do
+            Append(~factors,N[i,i]);
+        end for;
+      
+        DiagonalsList:=[*[A|]*];
+        for j in [1..rank] do
+            c:=factors[j];
+            Newdiaglist:=[**];
+            for divisor in ListOfDivisors(c) do
+                for diag in DiagonalsList do
+                    newrep:=Append(diag,divisor);
+                    Append(~Newdiaglist,newrep);
+                end for;
+            end for;
+            DiagonalsList:=Newdiaglist;
+        end for;
+        
+        for diag in DiagonalsList do
+            MatList:=[* [**] *];
+            for i in [1..rank] do
+                newMatList:=[**];
+                init:=[A|];
+                for j in [1..(i-1)] do
+                    Append(~init,Zero(A));
+                end for;
+                dd:=diag[i];
+                Append(~init,dd);
+                if dd eq factors[i] then
+                    for j in [i+1 .. rank] do
+                        Append(~init,Zero(A));
+                    end for;
+                    for k in [1..#MatList] do
+                        Append(~MatList[k], init);
+                    end for; 
+                else
+                    RowBuilds:=[*init*];
+                    for j in [i+1 .. rank] do
+                        quot,gg:=quo<A|diag[j]>;
+                        newRowBuilds:=[**];
+                        for element in quot do
+                            for row in RowBuilds do
+                                Append(~newRowBuilds, Append(row,element@@gg));
+                            end for;
+                        end for;
+                        RowBuilds:=newRowBuilds;
+                    end for;
+
+                    for k in [1..#MatList] do
+                        for row in RowBuilds do
+                            Append(~newMatList, Append(MatList[k],row));
+                        end for;
+                    end for;
+                    MatList:=newMatList;
+                end if;
+            end for;
+            
+            for mat in MatList do
+                BasisSeq:=[Oo|];
+                for row in mat do
+                    Append(~BasisSeq,Oo!row);
+                end for;
+                thisIdeal:=ideal<O0|BasisSeq>;
+                if ((ff meet thisIdeal) eq ff) then
+                    add:= true;
+                    for id in OverIdList do
+                        if id eq thisIdeal then
+                            add:=false;
+                        end if;
+                    end for;
+                    if add then
+                        Append(~OverIdList,thisIdeal);
+                    end if;
+                end if;
+            end for;
+
+        end for;
+
+        return OverIdList;
+    end function;
+
+    //Return the (global) weak equivalence classes of Oo ideals with multiplicator
+    //ring SS
+    function WeakEquivalenceClasses(Ss,Oo)
+        K := FunctionField(Oo);
+        O := MaximalOrderFinite(K);
+        Bas:=Basis(Ss);
+        SsI:=ideal<Oo|Bas>; 
+        Sst:=TraceDualIdeal(SsI);
+        Lw:=[**];
+        if 1 in Sst*IdQuo(SsI,Sst) then
+            Append(~Lw,SsI);
+        else
+
+            OverOrds:=OrdersInBetween(Ss,O);
+            for overord in OverOrds do
+                Tt:=overord;
+                TtI:=ideal<Oo|Basis(Tt)>;
+                if 1 in Sst*TtI*IdQuo(TtI,(Sst*TtI)) then
+                    break;
+                end if;
+            end for;
+            ff:=ideal<Oo|Basis(IdQuo(SsI,TtI))>;
+            for II in OverIdeals(Tt,ff) do
+                IIS:=ideal<Oo|Basis(II)>;
+                add:=true;
+                if (IdQuo(IIS,IIS) ne SsI) then
+                    add:=false;
+                end if;
+                for JJ in Lw do
+                    if WeaklyEquivalent(IIS,JJ) then
+                        add:=false;
+                        break;
+                    end if;
+                end for;
+                if add then
+                    Append(~Lw,IIS);
+                end if;
+
+            end for;
+            
+        end if;
+        return Lw;
+    end function;
+
+//Local weak equivalence classes W_{S_p}(R)///////////////////////////////////////////////////////////
+
+function CoincideClasses(I,J,ListPrimes)
+//FracIdeal[R],FracIdeal[R],RngFunOrd,[RngFunOrdIdl] -> Boolean
+//The ListPrimes should contain a list of prime ideals of R above some p in A 
+//Calculates if I and J are locally at p weak equivalent.
+    L:= IdQuo(I,J)*IdQuo(J,I);
+    R := Order(I);
+    LR := L meet R;     
+    //We first intersect with R to make R the set that contains everything
+    //Then LR is disjoint from R\[p_1 \cup \ldots \cup p_k] becomes equivalent
+    //to LR contained in [p_1\cup \ldots \cup p_k]
+    for prime in ListPrimes do
+	if (LR+prime) eq prime then  //equiv to L \subset prime
+	    return false;
+	end if;
+    end for;
+    return true;
+end function;
+
+function LocalWeakEquiv(I,J,p)
+//FracIdeal[RngFunOrd],FracIdeal[RngFunOrd], RngUPolElm -> Boolean 
+//Calculates if the fractional ideals I and J are locally at p weak equivalent.
+	R := Order(I);
+	ListOfPrimes := Decomposition(R,p);
+	return CoincideClasses(I,J,ListOfPrimes);
+end function;
+
+
+function RestrictWeakEquiv(R,ClassesS,p)
+//RngFunOrd,[RngFunOrdIdl[R]],RngUPolElm -> [RngFunOrdIdl[R]] 
+//Maps W_S(R),p to W_{S_p}(R) 
+    ListPrimes := Decomposition(R,p);
+    ClassesSp := [**];
+    for class in ClassesS do
+	same := false;
+	for classSp in ClassesSp do
+	    if CoincideClasses(classSp,class,ListPrimes) then
+		same := true;
+		break;
+	    end if;
+	end for;
+	if same eq false then
+	    Append(~ClassesSp,class);
+	end if;
+    end for;
+    return ClassesSp;
+end function; 
+
+
+
+//Local ideal class monoid ICM(R_p)///////////////////////////////////////////////////////////////////
+
+function ICMp(R,p)
+//RngFunOrd,RngUPolElm -> [RngFunOrdIdl] 
+//Given an order R and p a prime of A, calculate the ideal class monoid of R_p
+//and output a list of representatives I such that the list of classes [I_p] is ICM(R_p)
+    pOverord := pOverorders(R,p);	//Calculate the p-overorders
+    WsR := [**];			//Calculate W_S(R) the global weak equivalence classes
+    for ord in pOverord do
+        Append(~WsR,WeakEquivalenceClasses(ord,R));
+    end for;
+    WRp := [**];
+    for ClassesS in WsR do
+	ClassesSp := RestrictWeakEquiv(R,ClassesS,p);	//For each overorder S we check which classes collaps
+        for class in ClassesSp do			//Then we add all remaining classes to WRp
+   	    Append(~WRp,class);
+	end for;
+    end for;
+    return(WRp);
+end function; 
+
+
+//Computing Gekeler Ratios////////////////////////////////////////////////////////////////////////////
+
+function SingularPrimes(A,poly)
+//RngUPol,RngUPolElm -> [RngUPolElm] 
+//Calculates the singular primes of the order A[x]/poly(x) 
+    Fq := BaseRing(A);  //A = F_q[T]
+    Ax<x>:= PolynomialRing(A);     //Ax = F_q[T,x] 
+    K := FunctionField(poly);      //K = frac(Ax/poly)
+    O := EquationOrderFinite(K);   //O = Ax/poly 
+    D := Discriminant(O);
+    Singularprimes := [* *];      //Make list that will contain the singular primes
+    DA := A!D; //Coercion of D to ring A
+    FactorenD := Factorization(DA);
+    for FactorD in FactorenD do    
+//For each factor of the discriminant, we check if it is singular with Kummer's theorem
+        p := FactorD[1];    //Get the prime, FactorD = <Prime, exponent>
+        Ap<Tbar> := quo<A|p>; //Get A/p 
+        Axp<x> := PolynomialRing(Ap); //Axp = (A/p)[x] 
+        polyp := Axp ! poly;    //Take the equivalence class
+        FactorenP := Factorization(polyp);    //Factorize that
+        for FactorP in FactorenP do
+            gp:= FactorP[1];    //Get the factor of poly in A/p[x];
+            e:= FactorP[2];     //And its exponent
+            if e gt 1 then      //e=1 will not make it singular
+                g:= Ax ! gp;    //Lift gp to g
+                poly := Ax!poly; //Make poly an element of Ax again
+                rem := poly mod g; //Calculate the remainder of poly modulo g in Ax
+                if (rem mod (Ax!(p^2))) eq 0 then //Check if p^2 divides this remainder
+                    Append(~Singularprimes,p);
+                end if;
+            end if;
+        end for; 
+    end for;
+    return(Singularprimes);
+end function;
+
+function ProductOfLocalGekelerRatios(poly)
+//RngUPol, RngUPolElm -> a number 
+//Returns the product of all local gekeler ratios of poly, i.e. \prod_p v_p(poly) 
+    A := BaseRing(poly);
+    K := FunctionField(poly);
+    R := EquationOrderFinite(K);
+    singprimes := SingularPrimes(A,poly);
+    K := FunctionField(poly);
+    FqK := ExactConstantField(K);
+    qK := #FqK;
+    F := FieldOfFractions(A);
+    FqF := ConstantField(F);
+    qF := #FqF;
+    m := Degree(FqK,FqF);
+    product := Evaluate(LPolynomial(K),1/qK)/Evaluate(LPolynomial(F),1/qF)*(1-1/qF)/(1-1/qK) * 1/m;
+    for P in singprimes do //add the factor m_p
+	product := product*(#ICMp(R,P));
+    end for;
+    return(product);
+end function;
+
+
+//Minimal Polynomial of the Frobenius/////////////////////////////////////////////////////////////////
+
+//given a polynomial ring A = F_q[T] and a Drinfeld Module A->F_q^n{tau}
+//mapping T to phi, return the minimal polynomial of the Frobenius 
+//endomorphism
+function MinimalPolynomialOfFrobenius(A,phi)
+    T := Name(A,1);
+    Fq := BaseRing(A);
+    ktau := Parent(phi);
+    k:= BaseRing(phi);
+    n := Degree(k,Fq);
+    V,v:=VectorSpace(k,Fq);
+    Ax<x> := PolynomialRing(A);
+    
+    r:=Degree(phi);
+    Q:=[Fq|];
+
+    for i in [0..n] do
+        j:=0;
+        for coeff in Eltseq(phi^i) do
+            for ii in [1..n] do
+                Append(~Q,v(coeff)[ii]);
+                j:=j+1;
+            end for;
+        end for;
+        while j lt r*n^2+n do
+            Append(~Q,Zero(Fq));
+            j:=j+1;
+        end while;
+    end for;
+    N:=Transpose(Matrix(Fq,n+1,r*n^2+n,Q));
+    
+    dd:=n;
+    M:=ExtractBlock(N,1,1,r*n^2+n,dd+1);
+    for i in [1..r] do
+        dd:=Floor(n*(r-i)/r);
+        M:=HorizontalJoin(M,VerticalJoin(ZeroMatrix(Fq,n^2*i,dd+1),ExtractBlock(N,1,1,r*n^2+n-n^2*i,dd+1)));
+    end for;
+
+    B:=Basis(NullSpace(Transpose(M)));
+    polylist:=[Ax|];
+    for b in B do
+        a:=Zero(Ax);
+        c:=1;
+        for i in [0..r] do
+            dd:=Floor(n*(r-i)/r);
+            for j in [0..dd] do
+                a:=a+b[c]*T^j*x^i;
+                c:=c+1;
+            end for;
+        end for;
+        Append(~polylist,a);
+    end for;
+   
+    return GCD(polylist);
+
+end function;
+
+//ReadMe////////////////////////////////////////////////////////////////////////
+
+/* This code can be used to calculate (local) ideal class monoids of function fields
+and the product of local gekeler ratios for an isogenyclass of Drinfeld modules.
+For the theoretical background see: voeg link artikel in
+The code can be copy-pasted into a local version of the computer algebra system Magma
+or into the online Magma calculator: https://magma.maths.usyd.edu.au/calc/ .
+
+The probably most important functions are:
+
+ICMp(R,p)
+RngFunOrd,RngUPolElm -> [RngFunOrdIdl] 
+Given an order R = A[x]/f(x) with f irreducible and p a prime of A, calculate 
+the ideal class monoid of R_p. It is not know if the algorithm gives the correct
+answer if R is not of this form. 
+
+ProductOfLocalGekelerRatios(poly)
+RngUPolElm[RngUPol[FldFin]] -> a number 
+Returns the product of all local gekeler ratios of poly, i.e. \prod_p v_p(poly)
+
+MinimalPolynomialOfFrobenius(A,phi)
+given a polynomial ring A = F_q[T] and a Drinfeld Module A->F_{q^n}{tau}
+mapping T to phi, return the minimal polynomial of the Frobenius endomorphism
+
+SingularPrimes(A,poly)
+RngUPol,RngUPolElm -> [RngUPolElm] 
+Calculates the singular primes of the order A[x]/poly(x)  
+
+OrdersInBetween(Rr,Oo)
+RngFunOrd, RngFunOrd -> [RngFunOrd]
+Calculates all orders in between Rr and Oo, where Rr \subset Oo
+
+LocalWeakEquiv(I,J,p)
+FracIdeal[RngFunOrd],FracIdeal[RngFunOrd], RngUPolElm -> Boolean 
+Calculates if the fractional ideals I and J are locally at p weak equivalent
+
+pOverorders(R,p)
+RngUPol, RngFunOrd,RingUPolElm -> [RngFunOrd]
+For an A-order R we calculate the p-overorders over R 
+If R = A[x]/f(x) with f irreducible, then this function also gives representants
+for the overorders of R_p
+
+*/
+
+//Examples//////////////////////////////////////////////////////////////////////
+
+//We first set up the rings
+q:= 3;
+Fq:= FiniteField(q);
+Fqn<alpha> := ext<Fq|2>;
+A<T>:= PolynomialRing(Fq);
+F<T>:= FieldOfFractions(A);
+Fx<x> := PolynomialRing(F);
+ATx<x>:= PolynomialRing(A);
+ktau<tau>:= TwistedPolynomials(Fqn);
+
+//We take a phi and calculate its minimal polynomial of the frobenius
+//If this has the same degree as the rank of phi, we know that phi has a commutative endomorphism ring
+phi := tau^3+ tau^2 + tau;
+minpoly := MinimalPolynomialOfFrobenius(A,phi);
+print("The minimal polynomial is:");
+print(minpoly);
+print("The degree of the minimal polynomial equals the rank of phi:");
+print(Degree(minpoly) eq Degree(phi));
+
+//We then calculate the singular primes
+SingPrimes := SingularPrimes(A,minpoly);
+print("The singular primes are:");
+for p in SingPrimes do
+    print(p);
+end for;
+
+//We can calculate the local ideal class monoid at the singular prime(s)
+//and check that the first two ideals are not weak equivalent
+K := FunctionField(minpoly);
+R := EquationOrderFinite(K);
+for p in SingPrimes do
+    classes := ICMp(R,p);
+    print("The local ICM is:");
+    print(classes); 
+    print("and the first two classes are locally weak equivalent:");
+    print(LocalWeakEquiv(classes[1],classes[2],p));
+end for;
+
+//Similar we can calculate the overorders at the singular prime(s)
+for p in SingPrimes do
+    print("The local overorders are:");
+    print(pOverorders(R,p));
+end for;
+
+//Last we can calculate the product of the local Gekeler ratios
+print("The product of the local Gekeler ratios is:");
+print(ProductOfLocalGekelerRatios(minpoly));
+
+
+//Licence///////////////////////////////////////////////////////////////////////
+/* 
+The code builds on code of Jeff Katen: https://github.com/JeffKaten/DrinfeldModules .
+This code is published under the MIT license:
+
+Copyright (c) 2026 A. Eggink
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
