@@ -40,9 +40,8 @@ For an A-order R we calculate the p-overorders over R
 If R = A[x]/f(x) with f irreducible, then this function also gives representants
 for the overorders of R_p
 
-*/
-
 //Examples//////////////////////////////////////////////////////////////////////
+//The part below can be copied into Magma below the source code, to run some examples.
 
 //We first set up the rings
 q:= 3;
