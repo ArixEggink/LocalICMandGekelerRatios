@@ -1,26 +1,26 @@
 ReadMe
 
 This code can be used to calculate (local) ideal class monoids of function fields
-and the product of local gekeler ratios for an isogenyclass of Drinfeld modules.
+and the product of local gekeler ratios for an isogeny class of Drinfeld modules.
 For the theoretical background see: voeg link artikel in
 The code can be copy-pasted into a local version of the computer algebra system Magma
 or into the online Magma calculator: https://magma.maths.usyd.edu.au/calc/ .
 
-The probably most important functions are:
+The most important functions are:
 
 ICMp(R,p)
 RngFunOrd,RngUPolElm -> [RngFunOrdIdl] 
 Given an order R = A[x]/f(x) with f irreducible and p a prime of A, calculate 
-the ideal class monoid of R_p. It is not know if the algorithm gives the correct
+the ideal class monoid of R_p. It is not known if the algorithm gives the correct
 answer if R is not of this form. 
 
 ProductOfLocalGekelerRatios(poly)
 RngUPolElm[RngUPol[FldFin]] -> a number 
-Returns the product of all local gekeler ratios of poly, i.e. \prod_p v_p(poly)
+Returns the product of all local Gekeler ratios of poly, i.e. \prod_p v_p(poly)
 
 MinimalPolynomialOfFrobenius(A,phi)
-given a polynomial ring A = F_q[T] and a Drinfeld Module A->F_{q^n}{tau}
-mapping T to phi, return the minimal polynomial of the Frobenius endomorphism
+Given a polynomial ring A = F_q[T] and a Drinfeld Module A->F_{q^n}{tau}
+mapping T to phi, returns the minimal polynomial of the Frobenius endomorphism
 
 SingularPrimes(A,poly)
 RngUPol,RngUPolElm -> [RngUPolElm] 
@@ -32,12 +32,12 @@ Calculates all orders in between Rr and Oo, where Rr \subset Oo
 
 LocalWeakEquiv(I,J,p)
 FracIdeal[RngFunOrd],FracIdeal[RngFunOrd], RngUPolElm -> Boolean 
-Calculates if the fractional ideals I and J are locally at p weak equivalent
+Calculates if the fractional ideals I and J are locally at p weakly equivalent
 
 pOverorders(R,p)
 RngUPol, RngFunOrd,RingUPolElm -> [RngFunOrd]
-For an A-order R we calculate the p-overorders over R 
-If R = A[x]/f(x) with f irreducible, then this function also gives representants
+Given an A-order R, calculates the p-overorders over R 
+If R = A[x]/f(x) with f irreducible, then this function also gives representatives
 for the overorders of R_p
 
 //Examples//////////////////////////////////////////////////////////////////////
@@ -70,18 +70,18 @@ for p in SingPrimes do
 end for;
 
 //We can calculate the local ideal class monoid at the singular prime(s)
-//and check that the first two ideals are not weak equivalent
+//and check that the first two ideals are not weakly equivalent
 K := FunctionField(minpoly);
 R := EquationOrderFinite(K);
 for p in SingPrimes do
     classes := ICMp(R,p);
     print("The local ICM is:");
     print(classes); 
-    print("and the first two classes are locally weak equivalent:");
+    print("and the first two classes are locally weakly equivalent:");
     print(LocalWeakEquiv(classes[1],classes[2],p));
 end for;
 
-//Similar we can calculate the overorders at the singular prime(s)
+//Similarly we can calculate the overorders at the singular prime(s)
 for p in SingPrimes do
     print("The local overorders are:");
     print(pOverorders(R,p));
