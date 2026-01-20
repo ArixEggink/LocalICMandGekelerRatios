@@ -1,8 +1,8 @@
 ReadMe
 
 This code can be used to calculate (local) ideal class monoids of function fields
-and the product of local gekeler ratios for an isogeny class of Drinfeld modules.
-For the theoretical background see: voeg link artikel in
+and the product of local Gekeler ratios for an isogeny class of Drinfeld modules.
+For the theoretical background see the article ``Calculating the Local Ideal Class Monoid and Gekeler Ratios'' on Arxiv. 
 The code can be copy-pasted into a local version of the computer algebra system Magma
 or into the online Magma calculator: https://magma.maths.usyd.edu.au/calc/ .
 
@@ -66,7 +66,7 @@ print(Degree(minpoly) eq Degree(phi));
 SingPrimes := SingularPrimes(A,minpoly);
 print("The singular primes are:");
 for p in SingPrimes do
-    print(p);
+print(p);
 end for;
 
 //We can calculate the local ideal class monoid at the singular prime(s)
@@ -74,17 +74,17 @@ end for;
 K := FunctionField(minpoly);
 R := EquationOrderFinite(K);
 for p in SingPrimes do
-    classes := ICMp(R,p);
-    print("The local ICM is:");
-    print(classes); 
-    print("and the first two classes are locally weakly equivalent:");
-    print(LocalWeakEquiv(classes[1],classes[2],p));
+classes := ICMp(R,p);
+print("The local ICM is:");
+print(classes); 
+print("and the first two classes are locally weakly equivalent:");
+print(LocalWeakEquiv(classes[1],classes[2],p));
 end for;
 
 //Similarly we can calculate the overorders at the singular prime(s)
 for p in SingPrimes do
-    print("The local overorders are:");
-    print(pOverorders(R,p));
+print("The local overorders are:");
+print(pOverorders(R,p));
 end for;
 
 //Last we can calculate the product of the local Gekeler ratios
