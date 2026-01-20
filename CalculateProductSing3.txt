@@ -18,7 +18,6 @@ function InvariantFactors(Rr,Oo)
 //RngFunOrd, RngFunOrd -> [A]
 //Gives the invariant factors of Oo/Rr
     M:=MatrixOfSubOrder(Rr,Oo);
-    OverOrdList:=[**];
     N,D,C:= SmithForm(M);  
     //N has invariant factors of M on its diagonal, which are the invariant factors of Oo/Rr. 
     // Make a list of the invariant factors
@@ -53,100 +52,100 @@ function OrdersInBetween(Rr,Oo)
 //RngFunOrd, RngFunOrd -> [RngFunOrd]
 //Calculates all orders in between Rr and Oo. (We have Rr \subset Oo.)
 	A:=BaseRing(Rr);
-        M:=MatrixOfSubOrder(Rr,Oo);
-        rank := #Basis(Rr);
-        OverOrdList:=[**];
-        N,D,C:= SmithForm(M);  
+	M:=MatrixOfSubOrder(Rr,Oo);
+	rank := #Basis(Rr);
+	OverOrdList:=[**];
+	N,D,C:= SmithForm(M);  
 	//N has invariant factors of M on its diagonal, which are the invariant factors of Oo/Rr. 
 
 	// Make a list of the invariant factors
-        factors:=[**];
-        for i in [1..rank] do
-            Append(~factors,N[i,i]);
-        end for;
+	factors:=[**];
+	for i in [1..rank] do
+		Append(~factors,N[i,i]);
+	end for;
         
 	//Make a list of all posibilities [r_1,\ldots,r_k] such that r_i divides factors[i] 
-        DiagonalsList:=[*[A|]*];
-        for j in [1..rank] do
-            c:=factors[j];
-            Newdiaglist:=[**];
-            for divisor in ListOfDivisors(c) do
-                for diag in DiagonalsList do
-                    newrep:=Append(diag,divisor);
-                    Append(~Newdiaglist,newrep);
-                end for;
-            end for;
-            DiagonalsList:=Newdiaglist;
-        end for;
+	DiagonalsList:=[*[A|]*];
+	for j in [1..rank] do
+		c:=factors[j];
+		Newdiaglist:=[**];
+		for divisor in ListOfDivisors(c) do
+			for diag in DiagonalsList do
+				newrep:=Append(diag,divisor);
+				Append(~Newdiaglist,newrep);
+			end for;
+		end for;
+		DiagonalsList:=Newdiaglist;
+	end for;
         
-        for diag in DiagonalsList do
-            MatList:=[* [**] *];  			//List of matrices in form list of rows
-            for i in [1..rank] do
-                newMatList:=[**];
-                init:=[A|];
-                for j in [1..(i-1)] do
-                    Append(~init,Zero(A));
-                end for;
-                dd:=diag[i];
-                Append(~init,dd);
-                if dd eq factors[i] then
-                    for j in [i+1 .. rank] do
-                        Append(~init,Zero(A));		//init = [0,0,...,factors[i],0,...0]
-                    end for;
-                    for k in [1..#MatList] do		//For every matrix set row i to init 
-                        Append(~MatList[k], init);	//(by appending it to the list of rows)
-                    end for; 
-                else
-		    //Make list of elements of the form [0,0,...,diag[i],a_{i+1},\ldots,a_r] 
-		    //where a_j is in the set of lifts of A/(diag[j]). 
-                    RowBuilds:=[*init*];
-                    for j in [i+1 .. rank] do
-                        quot,gg:=quo<A|diag[j]>;	//Form A/(diag[j]) and the projection map
-                        newRowBuilds:=[**];
-                        for element in quot do
-                            for row in RowBuilds do
-                                Append(~newRowBuilds, Append(row,element@@gg));
-                            end for;
-                        end for;
-                        RowBuilds:=newRowBuilds;
-                    end for;
-		    // Append all possible new rows i to all partly created matrices
-                    for k in [1..#MatList] do
-                        for row in RowBuilds do
-                            Append(~newMatList, Append(MatList[k],row));
-                        end for;
-                    end for;
-                    MatList:=newMatList;
-                end if;
-            end for;
-            
-            for mat in MatList do
-                BasisSeq:=[Oo|];
-                for row in mat do
-                    Append(~BasisSeq,Oo!row);
-                end for;
-                thisIdeal:=ideal<Rr|BasisSeq>;
-                if (thisIdeal*thisIdeal eq thisIdeal) and ((1*Rr meet thisIdeal) eq 1*Rr) then
-                    add:= true;
-                    for ord in OverOrdList do
-                        if ord eq thisIdeal then
-                            add:=false;
-                        end if;
-                    end for;
-                    if add then
-                        Append(~OverOrdList,thisIdeal);
-                    end if;
-                end if;
-            end for;
+	for diag in DiagonalsList do
+		MatList:=[* [**] *];  			//List of matrices in form list of rows
+		for i in [1..rank] do
+			newMatList:=[**];
+			init:=[A|];
+			for j in [1..(i-1)] do
+				Append(~init,Zero(A));
+			end for;
+			dd:=diag[i];
+			Append(~init,dd);
+			if dd eq factors[i] then
+				for j in [i+1 .. rank] do
+					Append(~init,Zero(A));		//init = [0,0,...,factors[i],0,...0]
+				end for;
+				for k in [1..#MatList] do		//For every matrix set row i to init 
+					Append(~MatList[k], init);	//(by appending it to the list of rows)
+				end for; 
+			else
+			//Make list of elements of the form [0,0,...,diag[i],a_{i+1},\ldots,a_r] 
+			//where a_j is in the set of lifts of A/(diag[j]). 
+				RowBuilds:=[*init*];
+				for j in [i+1 .. rank] do
+					quot,gg:=quo<A|diag[j]>;	//Form A/(diag[j]) and the projection map
+					newRowBuilds:=[**];
+					for element in quot do
+						for row in RowBuilds do
+							Append(~newRowBuilds, Append(row,element@@gg));
+						end for;
+					end for;
+					RowBuilds:=newRowBuilds;
+				end for;
+				// Append all possible new rows i to all partly created matrices
+				for k in [1..#MatList] do
+					for row in RowBuilds do
+						Append(~newMatList, Append(MatList[k],row));
+					end for;
+				end for;
+				MatList:=newMatList;
+			end if;
+		end for;
+		
+		for mat in MatList do
+			BasisSeq:=[Oo|];
+			for row in mat do
+				Append(~BasisSeq,Oo!row);
+			end for;
+			thisIdeal:=ideal<Rr|BasisSeq>;
+			if (thisIdeal*thisIdeal eq thisIdeal) and ((1*Rr meet thisIdeal) eq 1*Rr) then
+				add:= true;
+				for ord in OverOrdList do
+					if ord eq thisIdeal then
+						add:=false;
+					end if;
+				end for;
+				if add then
+					Append(~OverOrdList,thisIdeal);
+				end if;
+			end if;
+		end for;
 
-        end for;
+	end for;
 
-        OverOrdListAsOrders:=[**];
-        for ord in OverOrdList do
-            Append(~OverOrdListAsOrders,Order(Rr,Basis(ord)));
-        end for;
+	OverOrdListAsOrders:=[**];
+	for ord in OverOrdList do
+		Append(~OverOrdListAsOrders,Order(Rr,Basis(ord)));
+	end for;
 
-        return OverOrdListAsOrders;
+	return OverOrdListAsOrders;
 end function;
 
 
@@ -165,184 +164,182 @@ end function;
 //Calculating W_S(R)////////////////////////////////////////////////////////////////////////////////////////
 
 
-    //return the trace dual ideal of an ideal I
-    function TraceDualIdeal(I)
-        Oo:=Order(I);
-        A := BaseRing(Oo);
+//return the trace dual ideal of an ideal I
+function TraceDualIdeal(I)
+	Oo:=Order(I);
+	A := BaseRing(Oo);
 	F := FieldOfFractions(A); 
-        Bas:=Basis(I);
-        //n:=rank;
+	Bas:=Basis(I);
+	//n:=rank;
 	n := #Basis(Oo); 
-        M:=MatrixRing(F, n)![Trace(Bas[i]*Bas[j]): i, j in [1..n] ];
-        MM:=M^-1;
-        dualidealgens:=[&+[ (MM[i,j]*Bas[j]): j in [1..n]] : i in [1..n]] ;
-        return ideal<Oo|dualidealgens>;
-    end function;
+	M:=MatrixRing(F, n)![Trace(Bas[i]*Bas[j]): i, j in [1..n] ];
+	MM:=M^-1;
+	dualidealgens:=[&+[ (MM[i,j]*Bas[j]): j in [1..n]] : i in [1..n]] ;
+	return ideal<Oo|dualidealgens>;
+end function;
 
-    //ideal quotient using trace dual ideal
-    function IdQuo(I,J)
-        return(TraceDualIdeal(TraceDualIdeal(I)*J));
-    end function;
+//ideal quotient using trace dual ideal
+function IdQuo(I,J)
+	return(TraceDualIdeal(TraceDualIdeal(I)*J));
+end function;
 
-    //Return true if two ideals are weakly equivalent in R, false otherwise.
-    function WeaklyEquivalent(I,J)
-        if 1 in (IdQuo(I,J)*IdQuo(J,I)) then
-            return true;
-        else
-            return false;
-        end if;
-    end function;
+//Return true if two ideals are weakly equivalent in R, false otherwise.
+function WeaklyEquivalent(I,J)
+	if 1 in (IdQuo(I,J)*IdQuo(J,I)) then
+		return true;
+	else
+		return false;
+	end if;
+end function;
 
-    //Return all ideals between Oo and ff
-    function OverIdeals(Oo,ff)
-        O0:=Order(ff);
+//Return all ideals between Oo and ff
+function OverIdeals(Oo,ff)
+	O0:=Order(ff);
 	A:= BaseRing(O0); 
 	rank := #Basis(O0); 
-        MatEntries:=[A|];
-        for element in Basis(ff) do
-            elementInOo:=Eltseq(Oo!element);
-            for i in [1..rank] do
-                Append(~MatEntries,elementInOo[i]);
-            end for;
-        end for;
-        M:= Matrix(A,rank,rank,MatEntries);
+	MatEntries:=[A|];
+	for element in Basis(ff) do
+		elementInOo:=Eltseq(Oo!element);
+		for i in [1..rank] do
+			Append(~MatEntries,elementInOo[i]);
+		end for;
+	end for;
+	M:= Matrix(A,rank,rank,MatEntries);
 
-        OverIdList:=[**];
-        N,D,C:= SmithForm(M);
-        newbasisastuples:=Rows(C);
-        newbasis:=[Oo|];
-        for row in newbasisastuples do
-            newbasiselt:=Zero(Oo);
-            for i in [1..rank] do
-                newbasiselt:=newbasiselt+row[i]*Basis(Oo)[i];
-            end for;
-            Append(~newbasis,newbasiselt);
-        end for;
+	OverIdList:=[**];
+	N,D,C:= SmithForm(M);
+	newbasisastuples:=Rows(C);
+	newbasis:=[Oo|];
+	for row in newbasisastuples do
+		newbasiselt:=Zero(Oo);
+		for i in [1..rank] do
+			newbasiselt:=newbasiselt+row[i]*Basis(Oo)[i];
+		end for;
+		Append(~newbasis,newbasiselt);
+	end for;
 
-        factors:=[**];
-        for i in [1..rank] do
-            Append(~factors,N[i,i]);
-        end for;
-      
-        DiagonalsList:=[*[A|]*];
-        for j in [1..rank] do
-            c:=factors[j];
-            Newdiaglist:=[**];
-            for divisor in ListOfDivisors(c) do
-                for diag in DiagonalsList do
-                    newrep:=Append(diag,divisor);
-                    Append(~Newdiaglist,newrep);
-                end for;
-            end for;
-            DiagonalsList:=Newdiaglist;
-        end for;
-        
-        for diag in DiagonalsList do
-            MatList:=[* [**] *];
-            for i in [1..rank] do
-                newMatList:=[**];
-                init:=[A|];
-                for j in [1..(i-1)] do
-                    Append(~init,Zero(A));
-                end for;
-                dd:=diag[i];
-                Append(~init,dd);
-                if dd eq factors[i] then
-                    for j in [i+1 .. rank] do
-                        Append(~init,Zero(A));
-                    end for;
-                    for k in [1..#MatList] do
-                        Append(~MatList[k], init);
-                    end for; 
-                else
-                    RowBuilds:=[*init*];
-                    for j in [i+1 .. rank] do
-                        quot,gg:=quo<A|diag[j]>;
-                        newRowBuilds:=[**];
-                        for element in quot do
-                            for row in RowBuilds do
-                                Append(~newRowBuilds, Append(row,element@@gg));
-                            end for;
-                        end for;
-                        RowBuilds:=newRowBuilds;
-                    end for;
+	factors:=[**];
+	for i in [1..rank] do
+		Append(~factors,N[i,i]);
+	end for;
+  
+	DiagonalsList:=[*[A|]*];
+	for j in [1..rank] do
+		c:=factors[j];
+		Newdiaglist:=[**];
+		for divisor in ListOfDivisors(c) do
+			for diag in DiagonalsList do
+				newrep:=Append(diag,divisor);
+				Append(~Newdiaglist,newrep);
+			end for;
+		end for;
+		DiagonalsList:=Newdiaglist;
+	end for;
+	
+	for diag in DiagonalsList do
+		MatList:=[* [**] *];
+		for i in [1..rank] do
+			newMatList:=[**];
+			init:=[A|];
+			for j in [1..(i-1)] do
+				Append(~init,Zero(A));
+			end for;
+			dd:=diag[i];
+			Append(~init,dd);
+			if dd eq factors[i] then
+				for j in [i+1 .. rank] do
+					Append(~init,Zero(A));
+				end for;
+				for k in [1..#MatList] do
+					Append(~MatList[k], init);
+				end for; 
+			else
+				RowBuilds:=[*init*];
+				for j in [i+1 .. rank] do
+					quot,gg:=quo<A|diag[j]>;
+					newRowBuilds:=[**];
+					for element in quot do
+						for row in RowBuilds do
+							Append(~newRowBuilds, Append(row,element@@gg));
+						end for;
+					end for;
+					RowBuilds:=newRowBuilds;
+				end for;
 
-                    for k in [1..#MatList] do
-                        for row in RowBuilds do
-                            Append(~newMatList, Append(MatList[k],row));
-                        end for;
-                    end for;
-                    MatList:=newMatList;
-                end if;
-            end for;
-            
-            for mat in MatList do
-                BasisSeq:=[Oo|];
-                for row in mat do
-                    Append(~BasisSeq,Oo!row);
-                end for;
-                thisIdeal:=ideal<O0|BasisSeq>;
-                if ((ff meet thisIdeal) eq ff) then
-                    add:= true;
-                    for id in OverIdList do
-                        if id eq thisIdeal then
-                            add:=false;
-                        end if;
-                    end for;
-                    if add then
-                        Append(~OverIdList,thisIdeal);
-                    end if;
-                end if;
-            end for;
+				for k in [1..#MatList] do
+					for row in RowBuilds do
+						Append(~newMatList, Append(MatList[k],row));
+					end for;
+				end for;
+				MatList:=newMatList;
+			end if;
+		end for;
+		
+		for mat in MatList do
+			BasisSeq:=[Oo|];
+			for row in mat do
+				Append(~BasisSeq,Oo!row);
+			end for;
+			thisIdeal:=ideal<O0|BasisSeq>;
+			if ((ff meet thisIdeal) eq ff) then
+				add:= true;
+				for id in OverIdList do
+					if id eq thisIdeal then
+						add:=false;
+					end if;
+				end for;
+				if add then
+					Append(~OverIdList,thisIdeal);
+				end if;
+			end if;
+		end for;
 
-        end for;
+	end for;
 
-        return OverIdList;
-    end function;
+	return OverIdList;
+end function;
 
-    //Return the (global) weak equivalence classes of Oo ideals with multiplicator
-    //ring SS
-    function WeakEquivalenceClasses(Ss,Oo)
-        K := FunctionField(Oo);
-        O := MaximalOrderFinite(K);
-        Bas:=Basis(Ss);
-        SsI:=ideal<Oo|Bas>; 
-        Sst:=TraceDualIdeal(SsI);
-        Lw:=[**];
-        if 1 in Sst*IdQuo(SsI,Sst) then
-            Append(~Lw,SsI);
-        else
-
-            OverOrds:=OrdersInBetween(Ss,O);
-            for overord in OverOrds do
-                Tt:=overord;
-                TtI:=ideal<Oo|Basis(Tt)>;
-                if 1 in Sst*TtI*IdQuo(TtI,(Sst*TtI)) then
-                    break;
-                end if;
-            end for;
-            ff:=ideal<Oo|Basis(IdQuo(SsI,TtI))>;
-            for II in OverIdeals(Tt,ff) do
-                IIS:=ideal<Oo|Basis(II)>;
-                add:=true;
-                if (IdQuo(IIS,IIS) ne SsI) then
-                    add:=false;
-                end if;
-                for JJ in Lw do
-                    if WeaklyEquivalent(IIS,JJ) then
-                        add:=false;
-                        break;
-                    end if;
-                end for;
-                if add then
-                    Append(~Lw,IIS);
-                end if;
-
-            end for;
-            
-        end if;
-        return Lw;
-    end function;
+//Return the (global) weak equivalence classes of Oo ideals with multiplicator
+//ring SS
+function WeakEquivalenceClasses(Ss,Oo)
+//RngFunOrd, RngFunOrd -> [RngFunOrdIdl]
+	K := FunctionField(Oo);
+	O := MaximalOrderFinite(K);
+	Bas:=Basis(Ss);
+	SsI:=ideal<Oo|Bas>; 
+	Sst:=TraceDualIdeal(SsI);
+	Lw:=[**];
+	if 1 in Sst*IdQuo(SsI,Sst) then
+		Append(~Lw,SsI);
+	else
+		OverOrds:=OrdersInBetween(Ss,O);
+		for overord in OverOrds do
+			Tt:=overord;
+			TtI:=ideal<Oo|Basis(Tt)>;
+			if 1 in Sst*TtI*IdQuo(TtI,(Sst*TtI)) then
+				break;
+			end if;
+		end for;
+		ff:=ideal<Oo|Basis(IdQuo(SsI,TtI))>;
+		for II in OverIdeals(Tt,ff) do
+			IIS:=ideal<Oo|Basis(II)>;
+			add:=true;
+			if (IdQuo(IIS,IIS) ne SsI) then
+				add:=false;
+			end if;
+			for JJ in Lw do
+				if WeaklyEquivalent(IIS,JJ) then
+					add:=false;
+					break;
+				end if;
+			end for;
+			if add then
+				Append(~Lw,IIS);
+			end if;
+		end for;
+	end if;
+	return Lw;
+end function;
 
 //Local weak equivalence classes W_{S_p}(R)///////////////////////////////////////////////////////////
 
@@ -357,9 +354,9 @@ function CoincideClasses(I,J,ListPrimes)
     //Then LR is disjoint from R\[p_1 \cup \ldots \cup p_k] becomes equivalent
     //to LR contained in [p_1\cup \ldots \cup p_k]
     for prime in ListPrimes do
-	if (LR+prime) eq prime then  //equiv to L \subset prime
-	    return false;
-	end if;
+		if (LR+prime) eq prime then  //equiv to L \subset prime
+		    return false;
+		end if;
     end for;
     return true;
 end function;
@@ -382,8 +379,8 @@ function RestrictWeakEquiv(R,ClassesS,p)
 	same := false;
 	for classSp in ClassesSp do
 	    if CoincideClasses(classSp,class,ListPrimes) then
-		same := true;
-		break;
+			same := true;
+			break;
 	    end if;
 	end for;
 	if same eq false then
@@ -408,10 +405,10 @@ function ICMp(R,p)
     end for;
     WRp := [**];
     for ClassesS in WsR do
-	ClassesSp := RestrictWeakEquiv(R,ClassesS,p);	//For each overorder S we check which classes collaps
+		ClassesSp := RestrictWeakEquiv(R,ClassesS,p);	//For each overorder S we check which classes collaps
         for class in ClassesSp do			//Then we add all remaining classes to WRp
-   	    Append(~WRp,class);
-	end for;
+   		    Append(~WRp,class);
+		end for;
     end for;
     return(WRp);
 end function; 
@@ -431,7 +428,7 @@ function SingularPrimes(A,poly)
     DA := A!D; //Coercion of D to ring A
     FactorenD := Factorization(DA);
     for FactorD in FactorenD do    
-//For each factor of the discriminant, we check if it is singular with Kummer's theorem
+		//For each factor of the discriminant, we check if it is singular with Kummer's theorem
         p := FactorD[1];    //Get the prime, FactorD = <Prime, exponent>
         Ap<Tbar> := quo<A|p>; //Get A/p 
         Axp<x> := PolynomialRing(Ap); //Axp = (A/p)[x] 
@@ -440,7 +437,7 @@ function SingularPrimes(A,poly)
         for FactorP in FactorenP do
             gp:= FactorP[1];    //Get the factor of poly in A/p[x];
             e:= FactorP[2];     //And its exponent
-            if e gt 1 then      //e=1 will not make it singular
+            if e gt 1 then      //if e=1 it is regular
                 g:= Ax ! gp;    //Lift gp to g
                 poly := Ax!poly; //Make poly an element of Ax again
                 rem := poly mod g; //Calculate the remainder of poly modulo g in Ax
@@ -469,7 +466,7 @@ function ProductOfLocalGekelerRatios(poly)
     m := Degree(FqK,FqF);
     product := Evaluate(LPolynomial(K),1/qK)/Evaluate(LPolynomial(F),1/qF)*(1-1/qF)/(1-1/qK) * 1/m;
     for P in singprimes do //add the factor m_p
-	product := product*(#ICMp(R,P));
+		product := product*(#ICMp(R,P));
     end for;
     return(product);
 end function;
@@ -488,7 +485,6 @@ function MinimalPolynomialOfFrobenius(A,phi)
     n := Degree(k,Fq);
     V,v:=VectorSpace(k,Fq);
     Ax<x> := PolynomialRing(A);
-    
     r:=Degree(phi);
     Q:=[Fq|];
 
@@ -527,8 +523,8 @@ function MinimalPolynomialOfFrobenius(A,phi)
             end for;
         end for;
         Append(~polylist,a);
-    end for;
-   
-    return GCD(polylist);
+    end for;   
 
+    return GCD(polylist);
 end function;
+
