@@ -2,7 +2,7 @@ ReadMe
 
 This code can be used to calculate (local) ideal class monoids of function fields
 and the product of local Gekeler ratios for an isogeny class of Drinfeld modules.
-For the theoretical background see the article ``Calculating the Local Ideal Class Monoid and Gekeler Ratios'' on Arxiv. 
+For the theoretical background see the article ``Calculating the Local Ideal Class Monoid and Gekeler Ratios'' on Arxiv, https://arxiv.org/abs/2601.13184. 
 The code can be copy-pasted into a local version of the computer algebra system Magma
 or into the online Magma calculator: https://magma.maths.usyd.edu.au/calc/ .
 
